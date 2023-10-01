@@ -23,7 +23,7 @@ In order to be tracked, players will need to setup the RuneLite [Collection Log 
 There aren't any publicly listed API rate limits, so we don't worry about limiting our connections here, but can and will if needed.
 
 
-# TODO:
-Discord integration
-Shared Google Sheet integration
-Move point calculation configuration into modular YAML file
+# TODO
+- Discord integration
+- Shared Google Sheet integration
+- Move point calculation configuration into modular YAML file
