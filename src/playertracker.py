@@ -144,7 +144,7 @@ def track_players():
       player_tracker[member]['EHB'] = stats['Im_ehb']
       player_tracker[member]['EHP'] = stats['Im_ehp']
     elif gamemode == 'UIM':
-      player_tracker[member]['EHB'] = stats['Ehb']
+      player_tracker[member]['EHB'] = stats['Im_Ehb']
       player_tracker[member]['EHP'] = stats['Uim_ehp']
     else:
       print('unknown gamemode!')
