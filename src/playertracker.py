@@ -23,6 +23,7 @@ CLOG_PAGES = {
     "CoX CM KC": "Raids/Chambers of Xeric/1",
     "ToB KC": "Raids/Theatre of Blood/0",
     "ToB HM KC": "Raids/Theatre of Blood/2",
+    "ToA Entry KC": "Raids/Tombs of Amascut/1",
     "ToA Expert KC": "Raids/Tombs of Amascut/2",
     "Cursed phalanx": "Raids/Tombs of Amascut"
   }
@@ -34,6 +35,7 @@ PARSED_CLOG = {
     "CoX CM KC": 0,
     "ToB KC": 0,
     "ToB HM KC": 0,
+    "ToA KC": 0,
     "ToA Expert KC": 0,
     "Cursed phalanx": 0,
     "Pets": 0,
@@ -108,15 +110,15 @@ def compute_points(player_tracker):
   if player_tracker['Collection Log']['Pets'] == ALL_PETS:
     points += 5
 
-  cox_kc = player_tracker['Collection Log']['CoX CM KC'] + player_tracker['Collection Log']['CoX CM KC']
+  cox_kc = player_tracker['Collection Log']['CoX KC'] + player_tracker['Collection Log']['CoX CM KC']
   tob_kc = player_tracker['Collection Log']['ToB KC'] + player_tracker['Collection Log']['ToB HM KC']
   toa_kc = player_tracker['Collection Log']['ToA Expert KC']
 
-  if cox_kc >= 10 and tob_kc >= 10 and toa_kc >= 10:
+  if cox_kc >= 10 and tob_kc >= 10 and player_tracker['Collection Log']['ToA KC'] + toa_kc >= 10:
     points +=1
   if cox_kc >= 100 and tob_kc >= 100 and toa_kc >= 100:
     points += 2
-  if cox_kc >= 100 and tob_kc >= 100 and player_tracker['Collection Log']['Cursed phalanx'] > 0:
+  if player_tracker['Collection Log']['CoX CM KC'] >= 100 and player_tracker['Collection Log']['ToB HM KC'] >= 100 and player_tracker['Collection Log']['Cursed phalanx'] > 0:
     points += 4
 
   raids_kc = cox_kc + tob_kc + toa_kc
