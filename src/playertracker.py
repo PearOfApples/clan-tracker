@@ -147,18 +147,18 @@ def compute_points(player_tracker):
   return points
 
 def compute_ranks(redis_conn):
-  members = redis_conn.keys()
+  members = get_temple_group_members(LOGIN_TEMPLE_ID)
   rankings = []
   for member in members:
     p = json.loads(redis_conn.get(member))
     rank = 0
-    for k,v in RANKS_EHP_EHB.items():
+    for _,v in RANKS_EHP_EHB.items():
       if p['EHB'] + p['EHP'] >= v:
         rank += 1
         continue
       else:
         break
-    for k,v in RANKS_POINTS.items():
+    for _,v in RANKS_POINTS.items():
       if p['Points'] >= v:
         rank += 1
         continue
@@ -168,9 +168,18 @@ def compute_ranks(redis_conn):
     rankings.append([member, rank, p['Points']])
     redis_conn.set(member, json.dumps(p))
 
-  sorted_rankings = sorted(rankings, key = lambda x: (x[1], x[2]), reverse=True)
-  print(tabulate(sorted_rankings, headers=['RSN', 'Rank', 'Points']))
-  return sorted_rankings
+  return rankings
+
+def compute_leaderboard(rankings, redis_conn):
+  leaderboard = []
+  leaderboard = sorted(rankings, key = lambda x: (x[1], x[2]), reverse=True)
+  
+  for i in range(len(leaderboard)):
+    p = json.loads(redis_conn.get(i[0]))
+    p['Position'] = i+1
+    redis_conn.set(i[0], json.dumps(p))
+  
+  return leaderboard
 
 def track_players(redis_conn):
 
@@ -178,7 +187,7 @@ def track_players(redis_conn):
 
   for member in get_temple_group_members(LOGIN_TEMPLE_ID):
     gamemode = GAME_MODE[get_member_gamemode(member)['data']['Game mode']]
-    player_tracker[member] = {'Type': gamemode, 'EHB': 0, 'EHP': 0, 'Collection Log': {}, 'Skill Cape' : False, 'Maxed': False, 'Total XP': 0, 'Points' : 0, 'Rank': 0}
+    player_tracker[member] = {'Type': gamemode, 'EHB': 0, 'EHP': 0, 'Collection Log': {}, 'Skill Cape' : False, 'Maxed': False, 'Total XP': 0, 'Points' : 0, 'Rank': 0, 'Position': 0}
     
     stats = get_member_stats(member)['data']
     if gamemode == 'Main':
