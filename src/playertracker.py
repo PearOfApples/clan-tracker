@@ -156,7 +156,7 @@ def compute_ranks(redis_conn):
     p = json.loads(redis_conn.get(member))
     rank = 0
     for _,v in RANKS_EHP_EHB.items():
-      if p['EHB'] + p['EHP'] >= v:
+      if math.floor(p['EHB'] + p['EHP']) >= v:
         rank += 1
         continue
       else:
@@ -168,7 +168,7 @@ def compute_ranks(redis_conn):
       else:
         break
     p['Rank'] = rank
-    rankings.append([member, rank, p['Points']])
+    rankings.append([member, rank, p['Points'], math.floor(p['EHB'] + p['EHP'])])
     redis_conn.set(member, json.dumps(p))
 
   return rankings
