@@ -1,6 +1,8 @@
 import requests
 import copy
 import math
+import redis
+import json
 from pprint import pprint
 from ratelimit import limits, sleep_and_retry
 from tabulate import tabulate
@@ -44,8 +46,23 @@ PARSED_CLOG = {
 POINT_CALCULATOR = {
     "Champion's cape": 2,
     "Fire cape": 1,
-    "Infernal cape": 5,
+    "Infernal cape": 5
   }
+RANKS_EHP_EHB = {
+  1 : 100,
+  2 : 300,
+  3 : 600,
+  4 : 1200,
+  5 : 2000
+}
+RANKS_POINTS = {
+  1 : 5,
+  2 : 10,
+  3 : 25,
+  4 : 50,
+  5 : 100
+}
+
 
 @sleep_and_retry
 @limits(calls=5, period=300)
@@ -129,12 +146,39 @@ def compute_points(player_tracker):
 
   return points
 
-def track_players():
+def compute_ranks(redis_conn):
+  members = redis_conn.keys()
+  rankings = []
+  for member in members:
+    p = json.loads(redis_conn.get(member))
+    rank = 0
+    for k,v in RANKS_EHP_EHB.items():
+      if p['EHB'] + p['EHP'] >= v:
+        rank += 1
+        continue
+      else:
+        break
+    for k,v in RANKS_POINTS.items():
+      if p['Points'] >= v:
+        rank += 1
+        continue
+      else:
+        break
+    p['Rank'] = rank
+    rankings.append([member, rank, p['Points']])
+    redis_conn.set(member, json.dumps(p))
+
+  sorted_rankings = sorted(rankings, key = lambda x: (x[1], x[2]), reverse=True)
+  print(tabulate(sorted_rankings, headers=['RSN', 'Rank', 'Points']))
+  return sorted_rankings
+
+def track_players(redis_conn):
+
   player_tracker = {}
 
   for member in get_temple_group_members(LOGIN_TEMPLE_ID):
     gamemode = GAME_MODE[get_member_gamemode(member)['data']['Game mode']]
-    player_tracker[member] = {'Type': gamemode, 'EHB': 0, 'EHP': 0, 'Collection Log': {}, 'Skill Cape' : False, 'Maxed': False, 'Total XP': 0, 'Points' : 0}
+    player_tracker[member] = {'Type': gamemode, 'EHB': 0, 'EHP': 0, 'Collection Log': {}, 'Skill Cape' : False, 'Maxed': False, 'Total XP': 0, 'Points' : 0, 'Rank': 0}
     
     stats = get_member_stats(member)['data']
     if gamemode == 'Main':
@@ -164,13 +208,4 @@ def track_players():
       continue
 
     player_tracker[member]['Points'] = compute_points(player_tracker[member])
-
-  member_list = []
-  for member in player_tracker:
-    member_list.append([member, player_tracker[member]['Points']])
-
-  sorted_members = sorted(member_list, key=lambda x: x[1], reverse=True)
-  print(tabulate(sorted_members, headers=["RSN", "Points"]))
-
-  with open('output/detailed_tracking.txt', 'w') as f:
-    pprint(player_tracker, f)
+    redis_conn.set(member, json.dumps(player_tracker[member]))
