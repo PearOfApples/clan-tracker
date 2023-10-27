@@ -24,6 +24,8 @@ There aren't any publicly listed API rate limits, so we don't worry about limiti
 
 
 # TODO
-- Discord integration
-- Shared Google Sheet integration
+- Discord bot integration
+- Shared Google Sheet integration to support non-trackable points
 - Move point calculation configuration into modular YAML file
+- Finalize rank breakdown
+- Account for TempleOSRS users not on CollectionLog.net
