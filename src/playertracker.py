@@ -114,6 +114,9 @@ def check_skill_cape_and_max(stats):
   return skill_cape, maxed
 
 def compute_points(player_tracker):
+  if player_tracker['Collection Log'] == {}:
+    return 0
+
   points = 0
   for k,v  in POINT_CALCULATOR.items():
       if player_tracker['Collection Log'][k] > 0:
@@ -175,9 +178,10 @@ def compute_leaderboard(rankings, redis_conn):
   leaderboard = sorted(rankings, key = lambda x: (x[1], x[2]), reverse=True)
   
   for i in range(len(leaderboard)):
-    p = json.loads(redis_conn.get(i[0]))
+    p = json.loads(redis_conn.get(leaderboard[i][0]))
     p['Position'] = i+1
-    redis_conn.set(i[0], json.dumps(p))
+    leaderboard[i] = [i+1] + leaderboard[i]
+    redis_conn.set(leaderboard[i][0], json.dumps(p))
   
   return leaderboard
 
@@ -213,8 +217,7 @@ def track_players(redis_conn):
     try:
       player_tracker[member]['Collection Log'] = parse_collectionlog(clog, clog_pets)
     except:
-      player_tracker.pop(member)
-      continue
+      pass
 
     player_tracker[member]['Points'] = compute_points(player_tracker[member])
     redis_conn.set(member, json.dumps(player_tracker[member]))
