@@ -1,12 +1,9 @@
 import requests
 import copy
 import math
-import redis
 import json
 import csv
-from pprint import pprint
 from ratelimit import limits, sleep_and_retry
-from tabulate import tabulate
 
 LOGIN_TEMPLE_ID = 2124
 MAX_TOTAL_LEVEL = 2277
@@ -143,7 +140,7 @@ def compute_points(player_tracker):
   if player_tracker['Skill Cape']:
     points += 1
   if player_tracker['Maxed']:
-    points += 3
+    points += 5
   if player_tracker['Minimum Level'] >= 70:
       points += 1
   if player_tracker['Minimum Level'] >= 80:
@@ -179,7 +176,6 @@ def compute_ranks(redis_conn):
   members = [x.lower() for x in get_temple_group_members(LOGIN_TEMPLE_ID)]
   rankings = []
   for member in members:
-    print(member)
     p = json.loads(redis_conn.get(member))
     rank = 0
     for _,v in RANKS_EHP_EHB.items():
