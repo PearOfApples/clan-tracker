@@ -4,6 +4,7 @@ import math
 import json
 import csv
 from ratelimit import limits, sleep_and_retry
+from pprint import pprint
 
 LOGIN_TEMPLE_ID = 2124
 MAX_TOTAL_LEVEL = 2277
@@ -23,7 +24,7 @@ CLOG_PAGES = {
   "CoX CM KC": "Raids/Chambers of Xeric/1",
   "ToB KC": "Raids/Theatre of Blood/0",
   "ToB HM KC": "Raids/Theatre of Blood/2",
-  "ToA Entry KC": "Raids/Tombs of Amascut/1",
+  "ToA KC": "Raids/Tombs of Amascut/0",
   "ToA Expert KC": "Raids/Tombs of Amascut/2",
   "Cursed phalanx": "Raids/Tombs of Amascut"
 }
@@ -66,9 +67,9 @@ RANKS_EHP_EHB = {
 RANKS_POINTS = {
   1 : 5,
   2 : 10,
-  3 : 25,
-  4 : 50,
-  5 : 100
+  3 : 20,
+  4 : 40,
+  5 : 60
 }
 
 
@@ -135,18 +136,18 @@ def compute_points(player_tracker):
   points = 0
   for k,v  in CLOG_POINT_CALCULATOR.items():
     if player_tracker['Collection Log'][k] > 0:
-        points += v
+      points += v
 
   if player_tracker['Skill Cape']:
     points += 1
   if player_tracker['Maxed']:
     points += 5
   if player_tracker['Minimum Level'] >= 70:
-      points += 1
+    points += 1
   if player_tracker['Minimum Level'] >= 80:
-      points += 1
+    points += 1
   if player_tracker['Minimum Level'] >= 90:
-      points += 1
+    points += 1
   if player_tracker['Collection Log']['Pets'] == ALL_PETS:
     points += 5
 
@@ -156,7 +157,7 @@ def compute_points(player_tracker):
 
   if cox_kc >= 10 and tob_kc >= 10 and player_tracker['Collection Log']['ToA KC'] + toa_kc >= 10:
     points +=1
-  if cox_kc >= 100 and tob_kc >= 100 and toa_kc >= 100:
+  if cox_kc >= 100 and tob_kc >= 100 and player_tracker['Collection Log']['ToA Expert KC'] >= 100:
     points += 2
   if player_tracker['Collection Log']['CoX CM KC'] >= 100 and player_tracker['Collection Log']['ToB HM KC'] >= 100 and player_tracker['Collection Log']['Cursed phalanx'] > 0:
     points += 4
@@ -166,10 +167,8 @@ def compute_points(player_tracker):
   points += math.floor(player_tracker['Total XP'] / 50000000)
   points += math.floor(player_tracker['Collection Log']['Total'] / 100)
   points += math.floor(player_tracker['Collection Log']['Pets'] / 5)
-
   for k,v in OTHER_POINT_CALCULATOR.items():
     points += v if player_tracker['Other'][k] == True else 0
-
   return points
 
 def compute_ranks(redis_conn):
@@ -205,7 +204,6 @@ def compute_leaderboard(rankings, redis_conn):
     p['Position'] = i+1
     leaderboard[i] = [i+1] + leaderboard[i]
     redis_conn.set(leaderboard[i][0], json.dumps(p))
-
   return leaderboard
 
 def track_players(redis_conn):
@@ -229,7 +227,6 @@ def track_players(redis_conn):
         'Fire cape': 0,
         'Infernal cape': 0,
         'Pets': 0,
-        'ToA Entry KC': 0,
         'ToA Expert KC': 0,
         'ToA KC': 0,
         'ToB HM KC': 0,
@@ -281,19 +278,18 @@ def track_players(redis_conn):
       player_tracker[member]['Collection Log'] = parse_collectionlog(clog, clog_pets)
     except:
       pass
-    player_tracker[member]['Points'] = compute_points(player_tracker[member])
 
   other_data = parse_spreadsheet_csv(get_spreadsheet_csv())
   for member in other_data:
     member_rsn = member[0].lower()
-    if member[0].lower() in player_tracker.keys():
-      player_tracker[member_rsn]['Other']['Quest cape'] = True if other_data[1] == "TRUE" else False
-      player_tracker[member_rsn]['Other']['Music cape'] = True if other_data[2] == "TRUE" else False
-      player_tracker[member_rsn]['Other']['Achievement Diary cape'] = True if other_data[3] == "TRUE" else False
-      player_tracker[member_rsn]['Other']['Blood Torva'] = True if other_data[4] == "TRUE" else False
-      player_tracker[member_rsn]['Other']['Hard CA'] = True if other_data[5] == "TRUE" else False
-      player_tracker[member_rsn]['Other']['Elite CA'] = True if other_data[6] == "TRUE" else False
-      player_tracker[member_rsn]['Other']['Master CA'] = True if other_data[7] == "TRUE" else False
-      player_tracker[member_rsn]['Other']['Grandmaster CA'] = True if other_data[8] == "TRUE" else False
-
+    if member_rsn in player_tracker.keys():
+      player_tracker[member_rsn]['Other']['Quest cape'] = True if member[1] == "TRUE" else False
+      player_tracker[member_rsn]['Other']['Music cape'] = True if member[2] == "TRUE" else False
+      player_tracker[member_rsn]['Other']['Achievement Diary cape'] = True if member[3] == "TRUE" else False
+      player_tracker[member_rsn]['Other']['Blood Torva'] = True if member[4] == "TRUE" else False
+      player_tracker[member_rsn]['Other']['Hard CA'] = True if member[5] == "TRUE" else False
+      player_tracker[member_rsn]['Other']['Elite CA'] = True if member[6] == "TRUE" else False
+      player_tracker[member_rsn]['Other']['Master CA'] = True if member[7] == "TRUE" else False
+      player_tracker[member_rsn]['Other']['Grandmaster CA'] = True if member[8] == "TRUE" else False
+      player_tracker[member_rsn]['Points'] = compute_points(player_tracker[member_rsn])
       redis_conn.set(member_rsn, json.dumps(player_tracker[member_rsn]))
